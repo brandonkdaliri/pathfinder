@@ -16,8 +16,8 @@ const ALGORITHMS = {
 Object.freeze(ALGORITHMS);
 const rectWidth = 25;
 const rectHeight = 25;
-const num_rows = 40;
-const num_cols = 80;
+const num_rows = parseInt((screen.height - 70)/rectWidth);
+const num_cols = parseInt(screen.width/rectHeight);
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const nodes = [];
@@ -27,7 +27,7 @@ const startNode = {
 };
 const finishNode = {
   row: 14,
-  col: 50
+  col: num_cols-7
 };
 
 let LMBDown = false;
@@ -38,6 +38,38 @@ let currentAlgorithm = ALGORITHMS.BFS;
 let running = false;
 
 /* Pathfinding Algorithms */
+
+async function dfs() {
+  const stack = [];
+  const parent = new Map();
+  let neighbours = [];
+  let node = {
+    row: startNode.row,
+    col: startNode.col
+  };
+  stack.push(node);
+  while (stack.length > 0) {
+    node = stack.pop();
+    if (nodes[node.row][node.col].state != STATE.START && nodes[node.row][node.col].state != STATE.FINISH) {
+      nodes[node.row][node.col].state = STATE.VISITED;
+    }
+    if(node.row == finishNode.row && node.col == finishNode.col){
+      drawPath(parent);
+      return;
+    } else {
+      neighbours = findNeighbours(node);
+      neighbours.forEach(newNode => {
+        if(!parent.has(`${newNode.row},${newNode.col}`) && nodes[newNode.row][newNode.col].state != STATE.WALL){
+          stack.push(newNode);
+          parent.set(`${newNode.row},${newNode.col}`, node);
+        }
+      });
+    }
+    await sleep(2);
+  }
+
+  return -1;
+}
 
 /**
  * Uses BFS algorithm to solve maze.
@@ -67,8 +99,6 @@ async function bfs() {
         if(!parent.has(`${newNode.row},${newNode.col}`) && nodes[newNode.row][newNode.col].state != STATE.WALL){
           queue.push(newNode);
           parent.set(`${newNode.row},${newNode.col}`, node);
-
-          
         }
       });
     }
@@ -235,10 +265,12 @@ async function search() {
   if(!running){
     let result = 0;
     running = true;
-    //resetVisitedNodes();
+    resetVisitedNodes();
     if(currentAlgorithm == ALGORITHMS.BFS)
       result = await bfs();
-    
+    else if (currentAlgorithm == ALGORITHMS.DFS)
+      result = await dfs();
+
     if(result == -1)
       alert('A path could not be found!');
     running = false;
@@ -250,9 +282,10 @@ async function search() {
  */
 function clearPath(){
   if(!running){
+
     for(let row = 0; row < nodes.length; row++){
       nodes[row].forEach(node => {
-        if(node.state == STATE.PATH)
+        if(node.state == STATE.PATH || node.state == STATE.VISITED)
           node.state = STATE.EMPTY;
       });
     }
@@ -363,7 +396,6 @@ canvas.onmousedown = function(e) {
   console.log(`row: ${row} col: ${col} state: ${nodes[row][col].state} prevState: ${nodes[row][col].prevState}`);
   if(nodes[row][col].state == STATE.START){
     moveStart = true;
-    //moveStartNode(e);
   } else if (nodes[row][col].state == STATE.FINISH) {
     moveFinish = true;
   } else {
