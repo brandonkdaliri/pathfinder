@@ -27,32 +27,39 @@
               <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                 <button id="bfs" type="button" class="dropdown-item">Breadth-First Search</button>
                 <button id="dfs" type="button" class="dropdown-item">Depth-First Search</button>
+                <button id="greedy" type="button" class="dropdown-item">Greedy Best-First Search</button>
+                <button id="astar" type="button" class="dropdown-item">A* Search</button>
               </div>
             </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle text-white" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Speed
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <input type="range" class="custom-range" min="1" max="100" value="1" style="direction: rtl" id="speed">
+              </div>
+            </li>
+            <li class="navbar-nav">
+              <span id="algorithm-text" class="navbar-text text-white font-weight-bold">
+                Breadth-First Search
+              </span>
+            </li>
           </ul>
-
-          <!--Clear Path Button-->
-          <div class="navbar-nav offset-md-3">
-            <button id="clrPathBtn" class="btn btn-sm btn-secondary" type="button">Clear Path</button>
-          </div>
-          <!--Find Path Button-->
-          <div class="navbar-nav">
-            <button id="startBtn" type="button" class="btn btn-success">Find Path</button>
-          </div>
-          <!--Clear Walls Button-->
-          <div class="navbar-nav">
-            <button id="clrWallBtn" class="btn btn-sm btn-secondary" type="button" width="200px">Clear Walls</button>
-          </div>
-
-          <!--Selected Algorithm Text-->
-          <div id='algorithm-div' class="navbar-nav offset-md-1">
-            <span id='algorithm-text' class="text-white font-weight-bold">
-              Breadth-First Search
-            </span>
-          </div>
+          <ul class = "navbar-nav w-50 justify-content-center">
+            <li class="nav-item">
+              <!--Clear Path Button-->
+              <button id="clrPathBtn" class="btn btn-secondary" type="button">Clear Path</button>
+            </li>
+            <li class="nav-item">
+              <!--Find Path Button-->
+              <button id="startBtn" type="button" class="btn btn-success">Find Path</button>
+            </li>
+            <li class="nav-item">
+              <!--Clear Walls Button-->
+              <button id="clrWallBtn" class="btn btn-secondary" type="button" width="200px">Clear Walls</button>
+            </li>
+          </ul>
         </div>
-
-
 
         <a href="https://github.com/brandonkdaliri" target="_blank" class="btn btn-outline-success my-2 my-sm-0">My GitHub</a>
       </nav>
@@ -70,6 +77,7 @@
       <div class="card-body">
         <h5 class="card-title">Welcome to Pathfinding Visualizer!</h5>
         <p class="card-text">Left click to draw walls, right click to delete walls.</p>
+        <p class="card-text">Move the start and end nodes by dragging them.</p>
         <button type="button" id="tutorialBtn" class="btn btn-success">Got it!</button>
       </div>
     </div>

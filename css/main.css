@@ -17,11 +17,14 @@ html, body {
   opacity: 0.8;
 }
 
-#algorithm-div {
-  position:fixed;
-  color: white;
+#algorithm-text {
+  width: 200px;
 }
 
-.btn.btn-sm.btn-secondary {
-  width:100px;
+.btn.btn-secondary {
+  width:110px;
+}
+
+#startBtn {
+  width: 110px;
 }

@@ -11,13 +11,15 @@ const STATE = {
 Object.freeze(STATE);
 const ALGORITHMS = {
   BFS: 'bfs',
-  DFS: 'dfs'
+  DFS: 'dfs',
+  GREEDY: 'greedy',
+  ASTAR: 'astar'
 };
 Object.freeze(ALGORITHMS);
 const rectWidth = 25;
 const rectHeight = 25;
-const num_rows = parseInt((screen.height - 70)/rectWidth);
-const num_cols = parseInt(screen.width/rectHeight);
+const num_rows = Math.floor((screen.height - 70)/rectWidth);
+const num_cols = Math.floor(screen.width/rectHeight) - 1;
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const nodes = [];
@@ -29,6 +31,7 @@ const finishNode = {
   row: 14,
   col: num_cols-7
 };
+const startBtn = document.getElementById('startBtn');
 
 let LMBDown = false;
 let RMBDown = false;
@@ -36,8 +39,126 @@ let moveStart = false;
 let moveFinish = false;
 let currentAlgorithm = ALGORITHMS.BFS;
 let running = false;
+let speed = 1; // sleep time in ms between each iteration in algos
 
 /* Pathfinding Algorithms */
+async function astar(){
+  const frontier = [];
+  const parent = new Map();
+  let neighbours = [];
+  let node = {
+    row: startNode.row,
+    col: startNode.col,
+    heuristic: manhattan(startNode.row, startNode.col),
+    cost: 0
+  };
+  
+  frontier.push(node);
+  while (frontier.length > 0 && running) {
+    node = frontier.shift();
+    // if node is not start/end node, mark as visited
+    if (nodes[node.row][node.col].state != STATE.START && nodes[node.row][node.col].state != STATE.FINISH) {
+      nodes[node.row][node.col].state = STATE.VISITED;
+    }
+    // if found, draw its path and return
+    if(node.row == finishNode.row && node.col == finishNode.col){
+      await drawPath(parent);
+      return;
+    } else {
+      neighbours = findNeighbours(node);
+      neighbours.forEach(newNode => {
+        // check if node already exists in frontier
+        let found = -1;
+        for(let i = 0; i < frontier.length; i++) {
+          if (frontier[i].row == newNode.row && frontier[i].col == newNode.col) {
+            found = i;
+            break;
+          }
+        }
+
+        // if not in frontier / visited nodes, add it
+        newNode.cost = node.cost + 1;
+        newNode.heuristic = manhattan(newNode.row, newNode.col) + newNode.cost;
+        if(found == -1 && !parent.has(`${newNode.row},${newNode.col}`)){
+          frontier.push(newNode);
+          parent.set(`${newNode.row},${newNode.col}`, node);
+        } else if (found >= 0) { // decrease key otherwise
+          if (newNode.heuristic < frontier[found].heuristic) {
+            parent.set(`${newNode.row},${newNode.col}`, node);
+            frontier[found] = newNode;
+          }
+        }
+      });
+      frontier.sort((a, b) => a.heuristic - b.heuristic);
+    }
+    await sleep(speed);
+  }
+
+  if (running)
+    return -1;
+  else
+    return -2;
+}
+
+async function greedy(){
+  const frontier = [];
+  const parent = new Map();
+  let neighbours = [];
+  let node = {
+    row: startNode.row,
+    col: startNode.col,
+    heuristic: manhattan(startNode.row, startNode.col)
+  };
+  
+  frontier.push(node);
+  while (frontier.length > 0 && running) {
+    node = frontier.shift();
+    // if node is not start/end node, mark as visited
+    if (nodes[node.row][node.col].state != STATE.START && nodes[node.row][node.col].state != STATE.FINISH) {
+      nodes[node.row][node.col].state = STATE.VISITED;
+    }
+    // if found, draw its path and return
+    if(node.row == finishNode.row && node.col == finishNode.col){
+      await drawPath(parent);
+      return;
+    } else {
+      neighbours = findNeighbours(node);
+      neighbours.forEach(newNode => {
+        // check if node already exists in frontier
+        let found = -1;
+        for(let i = 0; i < frontier.length; i++) {
+          if (frontier[i].row == newNode.row && frontier[i].col == newNode.col) {
+            found = i;
+            break;
+          }
+        }
+
+        newNode.heuristic = manhattan(newNode.row, newNode.col);
+        // if not in frontier / visited nodes, add it
+        if(found == -1 && !parent.has(`${newNode.row},${newNode.col}`)){
+          frontier.push(newNode);
+          parent.set(`${newNode.row},${newNode.col}`, node);
+        } else if (found >= 0) { // decrease key otherwise
+          if (newNode.heuristic < frontier[found].heuristic) {
+            parent.set(`${newNode.row},${newNode.col}`, node);
+            frontier[found] = newNode;
+          }
+        }
+      });
+      frontier.sort((a, b) => a.heuristic - b.heuristic);
+    }
+    await sleep(speed);
+  }
+
+  if (running)
+    return -1;
+  else
+    return -2;
+}
+
+function manhattan(row, col) {
+  return Math.abs(row - finishNode.row) + Math.abs(col - finishNode.col);
+}
 
 async function dfs() {
   const stack = [];
@@ -48,27 +169,30 @@ async function dfs() {
     col: startNode.col
   };
   stack.push(node);
-  while (stack.length > 0) {
+  while (stack.length > 0 && running) {
     node = stack.pop();
     if (nodes[node.row][node.col].state != STATE.START && nodes[node.row][node.col].state != STATE.FINISH) {
       nodes[node.row][node.col].state = STATE.VISITED;
     }
     if(node.row == finishNode.row && node.col == finishNode.col){
-      drawPath(parent);
+      await drawPath(parent);
       return;
     } else {
       neighbours = findNeighbours(node);
       neighbours.forEach(newNode => {
-        if(!parent.has(`${newNode.row},${newNode.col}`) && nodes[newNode.row][newNode.col].state != STATE.WALL){
+        if(!parent.has(`${newNode.row},${newNode.col}`)){
           stack.push(newNode);
           parent.set(`${newNode.row},${newNode.col}`, node);
         }
       });
     }
-    await sleep(2);
+    await sleep(speed);
   }
 
-  return -1;
+  if (running)
+    return -1;
+  else
+    return -2;
 }
 
 /**
@@ -85,31 +209,34 @@ async function bfs() {
     col: startNode.col
   };
   queue.push(node);
-  while (queue.length > 0) {
+  while (queue.length > 0 && running) {
     node = queue.shift();
     if (nodes[node.row][node.col].state != STATE.START && nodes[node.row][node.col].state != STATE.FINISH) {
       nodes[node.row][node.col].state = STATE.VISITED;
     }
     if(node.row == finishNode.row && node.col == finishNode.col){
-      drawPath(parent);
+      await drawPath(parent);
       return;
     } else {
       neighbours = findNeighbours(node);
       neighbours.forEach(newNode => {
-        if(!parent.has(`${newNode.row},${newNode.col}`) && nodes[newNode.row][newNode.col].state != STATE.WALL){
+        if(!parent.has(`${newNode.row},${newNode.col}`)){
           queue.push(newNode);
           parent.set(`${newNode.row},${newNode.col}`, node);
         }
       });
     }
-    await sleep(2);
+    await sleep(speed);
   }
-
-  return -1;
+  if (running)
+    return -1;
+  else
+    return -2;
 }
 
 function findNeighbours(curNode) {
   const neighbours = [];
+  // diagonal: [1, 1], [1, -1], [-1, -1], [-1, 1]
   const nodeOffset = [[1, 0], [0, 1], [-1, 0], [0, -1]];
   
   nodeOffset.forEach(offset => {
@@ -117,8 +244,9 @@ function findNeighbours(curNode) {
       row: curNode.row + offset[0],
       col: curNode.col + offset[1],
     }
-    // check that offset node is in bounds
+    // check that offset node is in bounds and not a wall
     if (newNode.row >= 0 && newNode.row < num_rows && newNode.col >= 0 && newNode.col < num_cols) {
+      if (nodes[newNode.row][newNode.col].state != STATE.WALL)
         neighbours.push(newNode);
     }
   });
@@ -263,17 +391,28 @@ function removeDiv() {
  */
 async function search() {
   if(!running){
+    clearPath();
     let result = 0;
     running = true;
-    resetVisitedNodes();
-    if(currentAlgorithm == ALGORITHMS.BFS)
+    startBtn.textContent = 'Cancel';
+    startBtn.classList.toggle('btn', 'btn-danger');
+    if (currentAlgorithm == ALGORITHMS.BFS)
       result = await bfs();
     else if (currentAlgorithm == ALGORITHMS.DFS)
       result = await dfs();
+    else if (currentAlgorithm == ALGORITHMS.GREEDY)
+      result = await greedy();
+    else if (currentAlgorithm == ALGORITHMS.ASTAR)
+      result = await astar();
 
     if(result == -1)
       alert('A path could not be found!');
+
     running = false;
+  } else {
+    running = false;
+    startBtn.textContent = 'Find Path';
+    startBtn.classList.toggle('btn', 'btn-success');
   }
 }
 
@@ -438,17 +577,30 @@ window.onload=function init() {
   // Clear path
   btn = document.getElementById('clrPathBtn');
   if(btn) btn.addEventListener('click', clearPath, false);
-  // Start search algorithm 
-  btn = document.getElementById('startBtn');
-  if(btn) btn.addEventListener('click', search, false);
+  // Set speed
+  btn = document.getElementById('speed');
+  if(btn) btn.addEventListener('input', () => speed = document.getElementById('speed').value);
+  // Start search algorithm
+  if(startBtn) {
+    // not working
+    //startBtn.classList.add('btn' ,'btn-danger');
+    //startBtn.classList.add('btn', 'btn-success');
+    startBtn.addEventListener('click', search, false);
+
+  }
   // Select BFS algorithm
   btn = document.getElementById('bfs');
   if(btn) btn.addEventListener('click', () => {currentAlgorithm = ALGORITHMS.BFS; algorithmText.textContent = "Breadth-First Search"}, false);
   // Select DFS algorithm
   btn = document.getElementById('dfs');
   if(btn) btn.addEventListener('click', () => {currentAlgorithm = ALGORITHMS.DFS; algorithmText.textContent = "Depth-First Search"}, false);
+  // Select Greedy Best-First Search algorithm
+  btn = document.getElementById('greedy');
+  if(btn) btn.addEventListener('click', () => {currentAlgorithm = ALGORITHMS.GREEDY; algorithmText.textContent = "Greedy Best-First Search"}, false);
+  // Select A* Search algorithm
+  btn = document.getElementById('astar');
+  if(btn) btn.addEventListener('click', () => {currentAlgorithm = ALGORITHMS.ASTAR; algorithmText.textContent = "A* Search"}, false);
   
-
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
   createGrid();
