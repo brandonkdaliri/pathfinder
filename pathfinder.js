@@ -409,10 +409,11 @@ async function search() {
       alert('A path could not be found!');
 
     running = false;
+    startBtn.textContent = 'Find Path';
   } else {
     running = false;
     startBtn.textContent = 'Find Path';
-    startBtn.classList.toggle('btn', 'btn-success');
+    //startBtn.classList.toggle('btn', 'btn-success');
   }
 }
 
